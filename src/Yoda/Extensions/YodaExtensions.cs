@@ -51,7 +51,8 @@ namespace Yoda.Extensions
                             if (!allowedHttpMethods.Contains(context.Request.Method))
                                 return;
 
-                            var controller = Activator.CreateInstance(controllerType);
+                            var controllerArguments = GetDependencies(app, controllerType).ToArray();
+                            var controller = Activator.CreateInstance(controllerType, controllerArguments);
 
                             using (var reader = new StreamReader(context.Request.Body))
                             {
@@ -91,7 +92,7 @@ namespace Yoda.Extensions
 
         private static IEnumerable<object> ResolveParameters(string requestBody, ParameterInfo[] parameters, IQueryCollection query)
         {
-            var input = JObject.Parse(requestBody);
+            var input = string.IsNullOrWhiteSpace(requestBody) ? null : JObject.Parse(requestBody);
 
             foreach (var parameter in parameters)
             {
@@ -100,11 +101,25 @@ namespace Yoda.Extensions
                 else
                 {
                     if (parameter.ParameterType.IsPrimitive || parameter.ParameterType.Equals(typeof(string)))
-                        yield return ((JValue)input[parameter.Name])?.Value;
+                    {
+                        if (input != null)
+                            yield return ((JValue)input[parameter.Name])?.Value;
+                        else
+                            yield return Activator.CreateInstance(parameter.ParameterType);
+                    }
                     else
                         yield return JsonConvert.DeserializeObject(requestBody, parameter.ParameterType);
                 }
             }
+        }
+
+        private static IEnumerable<object> GetDependencies(IApplicationBuilder app, Type controllerType)
+        {
+            var ctor = controllerType.GetConstructors().FirstOrDefault();
+            var ctorParameters = ctor.GetParameters();
+
+            foreach (var item in ctorParameters)
+                yield return app.ApplicationServices.GetService(item.ParameterType);
         }
     }
 }
