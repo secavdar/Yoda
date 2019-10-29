@@ -7,7 +7,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{C30B7590-EB4
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{239C4D43-975A-43F3-AAC8-ABCE9DB84451}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Yoda", "Yoda\Yoda.csproj", "{EF2392DC-99FE-458F-AC79-AB9A6AE8D1D2}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{F741FA94-56F8-42F1-AD8A-3E6109F3FBF4}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "examples", "examples", "{0AFD3834-E5FF-496F-AE27-30012364F4F0}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Yoda", "src\Yoda\Yoda.csproj", "{967E8221-37E9-43C2-8EBE-033C38F6A85B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,16 +19,16 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{EF2392DC-99FE-458F-AC79-AB9A6AE8D1D2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{EF2392DC-99FE-458F-AC79-AB9A6AE8D1D2}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{EF2392DC-99FE-458F-AC79-AB9A6AE8D1D2}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{EF2392DC-99FE-458F-AC79-AB9A6AE8D1D2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{967E8221-37E9-43C2-8EBE-033C38F6A85B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{967E8221-37E9-43C2-8EBE-033C38F6A85B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{967E8221-37E9-43C2-8EBE-033C38F6A85B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{967E8221-37E9-43C2-8EBE-033C38F6A85B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{EF2392DC-99FE-458F-AC79-AB9A6AE8D1D2} = {C30B7590-EB45-42FC-BD45-D2A0EAE2168A}
+		{967E8221-37E9-43C2-8EBE-033C38F6A85B} = {C30B7590-EB45-42FC-BD45-D2A0EAE2168A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E91A9298-0220-475A-B689-69FCFF397D67}
