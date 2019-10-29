@@ -48,19 +48,18 @@ namespace Yoda.Extensions
                             {
                                 var requestBody = await reader.ReadToEndAsync();
 
-                                dynamic result;
-
                                 var parameters = method.GetParameters();
                                 var arguments = ResolveParameters(requestBody, parameters, context.Request.Query).ToArray();
 
-                                if (taskType.IsAssignableFrom(method.ReturnType))
-                                    result = await (dynamic)method.Invoke(controller, arguments);
-                                else
-                                    result = method.Invoke(controller, arguments);
+                                var result = taskType.IsAssignableFrom(method.ReturnType)
+                                           ? await (Task<IHttpResponse>)method.Invoke(controller, arguments)
+                                           : (IHttpResponse)method.Invoke(controller, arguments);
 
-                                string json = JsonConvert.SerializeObject(result);
+                                var json = JsonConvert.SerializeObject(result.Value);
 
                                 context.Response.Headers.Add("Content-Type", "applcation/json");
+                                context.Response.StatusCode = result.StatusCode;
+
                                 await context.Response.WriteAsync(json);
                             }
 
