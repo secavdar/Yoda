@@ -16,7 +16,7 @@ namespace Yoda.Extensions
     {
         public static IApplicationBuilder UseYoda(this IApplicationBuilder app)
         {
-            var assembly = Assembly.GetExecutingAssembly();
+            var assembly = Assembly.GetCallingAssembly();
             var taskType = typeof(Task);
             var controllerBaseType = typeof(ControllerBase);
             var controllers = assembly.GetTypes().Where(x => controllerBaseType.IsAssignableFrom(x) && !x.IsAbstract).ToArray();
