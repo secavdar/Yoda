@@ -1,0 +1,32 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29409.12
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{C30B7590-EB45-42FC-BD45-D2A0EAE2168A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{239C4D43-975A-43F3-AAC8-ABCE9DB84451}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Yoda", "Yoda\Yoda.csproj", "{EF2392DC-99FE-458F-AC79-AB9A6AE8D1D2}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EF2392DC-99FE-458F-AC79-AB9A6AE8D1D2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EF2392DC-99FE-458F-AC79-AB9A6AE8D1D2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EF2392DC-99FE-458F-AC79-AB9A6AE8D1D2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EF2392DC-99FE-458F-AC79-AB9A6AE8D1D2}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{EF2392DC-99FE-458F-AC79-AB9A6AE8D1D2} = {C30B7590-EB45-42FC-BD45-D2A0EAE2168A}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E91A9298-0220-475A-B689-69FCFF397D67}
+	EndGlobalSection
+EndGlobal
