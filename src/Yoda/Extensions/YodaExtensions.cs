@@ -18,19 +18,28 @@ namespace Yoda.Extensions
         {
             var assembly = Assembly.GetCallingAssembly();
             var taskType = typeof(Task);
+            var httpResponseType = typeof(IHttpResponse);
             var controllerBaseType = typeof(ControllerBase);
             var controllers = assembly.GetTypes().Where(x => controllerBaseType.IsAssignableFrom(x) && !x.IsAbstract).ToArray();
 
             foreach (var controllerType in controllers)
             {
-                var methods = controllerType.GetMembers().Where(x => x.MemberType == MemberTypes.Method && x.DeclaringType == controllerType).ToArray();
+                var methods = controllerType.GetMembers()
+                    .Where(x => x.MemberType == MemberTypes.Method && x.DeclaringType == controllerType)
+                    .Cast<MethodInfo>()
+                    .Where(x => httpResponseType.IsAssignableFrom(x.ReturnType) || (taskType.IsAssignableFrom(x.ReturnType) && x.ReturnType.IsGenericType && x.ReturnType.GenericTypeArguments.Count() == 1 && x.ReturnType.GenericTypeArguments.Any(y => httpResponseType.IsAssignableFrom(y))))
+                    .ToArray();
 
-                foreach (MethodInfo method in methods)
+                var classRouteAttributes = controllerType.GetCustomAttributes<RouteAttribute>();
+
+                foreach (var method in methods)
                 {
-                    var routeAttribute = method.GetCustomAttribute<RouteAttribute>();
+                    var routeAttributes = method.GetCustomAttributes<RouteAttribute>();
                     var allowedHttpMethods = method.GetCustomAttributes<HttpMethodAttribute>().SelectMany(x => x.HttpMethods).Distinct().ToArray();
 
-                    var route = routeAttribute.Template;
+                    var attributes = classRouteAttributes.Concat(routeAttributes);
+
+                    var route = string.Join("/", attributes.Select(x => x.Template));
 
                     if (!route.StartsWith("/"))
                         route = "/" + route;
@@ -55,12 +64,20 @@ namespace Yoda.Extensions
                                            ? await (Task<IHttpResponse>)method.Invoke(controller, arguments)
                                            : (IHttpResponse)method.Invoke(controller, arguments);
 
-                                var json = JsonConvert.SerializeObject(result.Value);
+                                if (result == null)
+                                    result = new HttpResponse
+                                    {
+                                        StatusCode = 200
+                                    };
 
                                 context.Response.Headers.Add("Content-Type", "applcation/json");
                                 context.Response.StatusCode = result.StatusCode;
 
-                                await context.Response.WriteAsync(json);
+                                if (result.Value != null)
+                                {
+                                    var json = JsonConvert.SerializeObject(result.Value);
+                                    await context.Response.WriteAsync(json);
+                                }
                             }
 
                             ((IDisposable)controller).Dispose();
