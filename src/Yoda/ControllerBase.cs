@@ -9,7 +9,7 @@ namespace Yoda
             GC.Collect(GC.GetGeneration(this), GCCollectionMode.Forced, true);
         }
 
-        protected IHttpResponse Ok(object value)
+        protected IHttpResponse Ok(object value = null)
         {
             return new HttpResponse
             {
@@ -18,7 +18,7 @@ namespace Yoda
             };
         }
 
-        protected IHttpResponse StatusCode(int statusCode, object value)
+        protected IHttpResponse StatusCode(int statusCode, object value = null)
         {
             return new HttpResponse
             {
