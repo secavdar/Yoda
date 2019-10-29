@@ -8,5 +8,23 @@ namespace Yoda
         {
             GC.Collect(GC.GetGeneration(this), GCCollectionMode.Forced, true);
         }
+
+        protected IHttpResponse Ok(object value)
+        {
+            return new HttpResponse
+            {
+                StatusCode = 200,
+                Value = value
+            };
+        }
+
+        protected IHttpResponse StatusCode(int statusCode, object value)
+        {
+            return new HttpResponse
+            {
+                StatusCode = statusCode,
+                Value = value
+            };
+        }
     }
 }
