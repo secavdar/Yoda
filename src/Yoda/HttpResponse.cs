@@ -7,6 +7,6 @@ namespace Yoda
         public int StatusCode { get; set; }
         public object Value { get; set; }
         public ContentTypes ContentType { get; set; }
-        public ResolverTypes ResolverType { get; set; }
+        public string FormatterType { get; set; }
     }
 }

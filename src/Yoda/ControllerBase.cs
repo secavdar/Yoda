@@ -27,7 +27,7 @@ namespace Yoda
                 StatusCode = statusCode,
                 Value = value,
                 ContentType = ContentTypes.JSON,
-                ResolverType = ResolverTypes.JSON
+                FormatterType = "JSON"
             };
         }
 
@@ -38,7 +38,7 @@ namespace Yoda
                 StatusCode = 200,
                 Value = value,
                 ContentType = ContentTypes.CSV,
-                ResolverType = ResolverTypes.CSV
+                FormatterType = "CSV"
             };
         }
 
@@ -49,7 +49,7 @@ namespace Yoda
                 StatusCode = 200,
                 Value = value,
                 ContentType = contentType,
-                ResolverType = ResolverTypes.TEXT
+                FormatterType = "TEXT"
             };
         }
     }
