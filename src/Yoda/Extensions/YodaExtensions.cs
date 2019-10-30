@@ -1,19 +1,34 @@
 ﻿using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
-using System.IO;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Yoda.Attributes;
+using Yoda.Formatters;
+using Yoda.ModelBinders;
+using Yoda.Options;
 
 namespace Yoda.Extensions
 {
     public static class YodaExtensions
     {
+        public static IServiceCollection AddYoda(this IServiceCollection services, Action<YodaOptions> setupAction = null)
+        {
+            var options = new YodaOptions();
+            setupAction?.Invoke(options);
+
+            services.AddSingleton<IOutputFormatter>(options.CsvOutputFormatter ?? new CsvOutputFormatter());
+            services.AddSingleton<IOutputFormatter>(options.JsonOutputFormatter ?? new JsonOutputFormatter());
+            services.AddSingleton<IOutputFormatter>(options.TextOutputFormatter ?? new TextOutputFormatter());
+
+            services.AddSingleton<IModelBinder, ModelBinder>();
+
+            return services;
+        }
+
         public static IApplicationBuilder UseYoda(this IApplicationBuilder app)
         {
             var assembly = Assembly.GetCallingAssembly();
@@ -27,7 +42,13 @@ namespace Yoda.Extensions
                 var methods = controllerType.GetMembers()
                     .Where(x => x.MemberType == MemberTypes.Method && x.DeclaringType == controllerType)
                     .Cast<MethodInfo>()
-                    .Where(x => httpResponseType.IsAssignableFrom(x.ReturnType) || (taskType.IsAssignableFrom(x.ReturnType) && x.ReturnType.IsGenericType && x.ReturnType.GenericTypeArguments.Count() == 1 && x.ReturnType.GenericTypeArguments.Any(y => httpResponseType.IsAssignableFrom(y))))
+                    .Where(x => httpResponseType.IsAssignableFrom(x.ReturnType) || 
+                                (
+                                    taskType.IsAssignableFrom(x.ReturnType) && 
+                                    x.ReturnType.IsGenericType && 
+                                    x.ReturnType.GenericTypeArguments.Count() == 1 && 
+                                    x.ReturnType.GenericTypeArguments.Any(y => httpResponseType.IsAssignableFrom(y))
+                                ))
                     .ToArray();
 
                 var classRouteAttributes = controllerType.GetCustomAttributes<RouteAttribute>();
@@ -35,7 +56,10 @@ namespace Yoda.Extensions
                 foreach (var method in methods)
                 {
                     var routeAttributes = method.GetCustomAttributes<RouteAttribute>();
-                    var allowedHttpMethods = method.GetCustomAttributes<HttpMethodAttribute>().SelectMany(x => x.HttpMethods).Distinct().ToArray();
+                    var allowedHttpMethods = method.GetCustomAttributes<HttpMethodAttribute>()
+                        .SelectMany(x => x.HttpMethods)
+                        .Distinct()
+                        .ToArray();
 
                     var attributes = classRouteAttributes.Concat(routeAttributes);
 
@@ -44,44 +68,66 @@ namespace Yoda.Extensions
                     if (!route.StartsWith("/"))
                         route = "/" + route;
 
-                    app.Map(route, builder =>
+                    app.MapWhen(context => 
+                    {
+                        if (!allowedHttpMethods.Contains(context.Request.Method))
+                            return false;
+
+                        var requestUrl = context.Request.Path.Value;
+                        var questionMarkIndex = requestUrl.IndexOf('?');
+
+                        if (questionMarkIndex != -1)
+                            requestUrl = requestUrl.Remove(questionMarkIndex);
+
+                        var routeSplit = route.Split('/', StringSplitOptions.RemoveEmptyEntries);
+                        var requestUrlSplit = requestUrl.Split('/', StringSplitOptions.RemoveEmptyEntries);
+
+                        if (routeSplit.Length != requestUrlSplit.Length)
+                            return false;
+
+                        for (int i = 0; i < routeSplit.Length; i++)
+                            if (routeSplit[i].StartsWith('{') && routeSplit[i].EndsWith('}'))
+                                context.Items.Add(routeSplit[i].Substring(1, routeSplit[i].Length - 2), requestUrlSplit[i]);
+
+                        return true;
+                    }, builder =>
                     {
                         builder.Run(async (context) =>
                         {
-                            if (!allowedHttpMethods.Contains(context.Request.Method))
-                                return;
+                            var scopeFactory = builder.ApplicationServices.GetService<IServiceScopeFactory>();
 
-                            var controllerArguments = GetDependencies(app, controllerType).ToArray();
-                            var controller = Activator.CreateInstance(controllerType, controllerArguments);
-
-                            using (var reader = new StreamReader(context.Request.Body))
+                            using (var scope = scopeFactory.CreateScope())
                             {
-                                var requestBody = await reader.ReadToEndAsync();
+                                var controllerArguments = GetDependencies(scope, controllerType).ToArray();
+                                var controller = Activator.CreateInstance(controllerType, controllerArguments);
 
-                                var parameters = method.GetParameters();
-                                var arguments = ResolveParameters(requestBody, parameters, context.Request.Query).ToArray();
+                                var modelBinder = scope.ServiceProvider.GetService<IModelBinder>();
+                                var arguments = modelBinder.Bind(context, method.GetParameters()).ToArray();
 
-                                var result = taskType.IsAssignableFrom(method.ReturnType)
-                                           ? await (Task<IHttpResponse>)method.Invoke(controller, arguments)
-                                           : (IHttpResponse)method.Invoke(controller, arguments);
+                                var httpResponse = taskType.IsAssignableFrom(method.ReturnType)
+                                                 ? await (Task<IHttpResponse>)method.Invoke(controller, arguments)
+                                                 : (IHttpResponse)method.Invoke(controller, arguments);
 
-                                if (result == null)
-                                    result = new HttpResponse
+                                if (httpResponse == null)
+                                    httpResponse = new HttpResponse
                                     {
                                         StatusCode = 200
                                     };
 
-                                context.Response.Headers.Add("Content-Type", "applcation/json");
-                                context.Response.StatusCode = result.StatusCode;
 
-                                if (result.Value != null)
+                                context.Response.Headers.Add("Content-Type", httpResponse.ContentType.ToDescription());
+                                context.Response.StatusCode = httpResponse.StatusCode;
+
+                                if (httpResponse.Value != null)
                                 {
-                                    var json = JsonConvert.SerializeObject(result.Value);
-                                    await context.Response.WriteAsync(json);
-                                }
-                            }
+                                    var outputFormatters = scope.ServiceProvider.GetServices<IOutputFormatter>();
+                                    var outputFormatter = outputFormatters.FirstOrDefault(x => x.FormatterType == httpResponse.FormatterType);
 
-                            ((IDisposable)controller).Dispose();
+                                    await outputFormatter.ResolveAsync(context, httpResponse);
+                                }
+
+                                ((IDisposable)controller).Dispose();
+                            }
                         });
                     });
                 }
@@ -90,36 +136,24 @@ namespace Yoda.Extensions
             return app;
         }
 
-        private static IEnumerable<object> ResolveParameters(string requestBody, ParameterInfo[] parameters, IQueryCollection query)
-        {
-            var input = string.IsNullOrWhiteSpace(requestBody) ? null : JObject.Parse(requestBody);
-
-            foreach (var parameter in parameters)
-            {
-                if (query.ContainsKey(parameter.Name))
-                    yield return query[parameter.Name].ToString();
-                else
-                {
-                    if (parameter.ParameterType.IsPrimitive || parameter.ParameterType.Equals(typeof(string)))
-                    {
-                        if (input != null)
-                            yield return ((JValue)input[parameter.Name])?.Value;
-                        else
-                            yield return Activator.CreateInstance(parameter.ParameterType);
-                    }
-                    else
-                        yield return JsonConvert.DeserializeObject(requestBody, parameter.ParameterType);
-                }
-            }
-        }
-
-        private static IEnumerable<object> GetDependencies(IApplicationBuilder app, Type controllerType)
+        private static IEnumerable<object> GetDependencies(IServiceScope scope, Type controllerType)
         {
             var ctor = controllerType.GetConstructors().FirstOrDefault();
             var ctorParameters = ctor.GetParameters();
 
             foreach (var item in ctorParameters)
-                yield return app.ApplicationServices.GetService(item.ParameterType);
+                yield return scope.ServiceProvider.GetService(item.ParameterType);
+        }
+
+        private static string ToDescription<T>(this T source)
+        {
+            var fi = source.GetType().GetField(source.ToString());
+            var attributes = (DescriptionAttribute[])fi.GetCustomAttributes(typeof(DescriptionAttribute), false);
+
+            if (attributes != null && attributes.Length > 0) 
+                return attributes[0].Description;
+            else 
+                return source.ToString();
         }
     }
 }
