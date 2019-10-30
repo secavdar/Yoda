@@ -85,9 +85,16 @@ namespace Yoda.Extensions
                         if (routeSplit.Length != requestUrlSplit.Length)
                             return false;
 
+                        var dictionary = new Dictionary<string, string>();
+
                         for (int i = 0; i < routeSplit.Length; i++)
                             if (routeSplit[i].StartsWith('{') && routeSplit[i].EndsWith('}'))
-                                context.Items.Add(routeSplit[i].Substring(1, routeSplit[i].Length - 2), requestUrlSplit[i]);
+                                dictionary.Add(routeSplit[i].Substring(1, routeSplit[i].Length - 2), requestUrlSplit[i]);
+                            else if (routeSplit[i].ToLower() != requestUrlSplit[i].ToLower())
+                                return false;
+
+                        foreach (var item in dictionary)
+                            context.Items.Add(item.Key, item.Value);
 
                         return true;
                     }, builder =>
