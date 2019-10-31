@@ -4,7 +4,7 @@ Yoda is a lightweight, memory friendly API Framework which is based on .Net Core
 
 Yoda is designed to be lightweight and configurable in every steps of Http requests and responses.
 
-Code like ASP.Net Core, with less libraries and less resources.
+Write your application like ASP.Net Core, with less libraries and less resources.
 
 ```csharp
 public class TestController : ControllerBase
