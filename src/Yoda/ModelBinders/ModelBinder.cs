@@ -4,6 +4,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 
 namespace Yoda.ModelBinders
@@ -25,7 +26,7 @@ namespace Yoda.ModelBinders
                     if (httpContext.Items.ContainsKey(parameter.Name))
                         yield return Convert.ChangeType(httpContext.Items[parameter.Name], parameter.ParameterType);
                     else if (query.ContainsKey(parameter.Name))
-                        yield return Convert.ChangeType(query[parameter.Name], parameter.ParameterType);
+                        yield return Convert.ChangeType(query[parameter.Name].FirstOrDefault(), parameter.ParameterType);
                     else
                     {
                         if (parameter.ParameterType.IsPrimitive || parameter.ParameterType.Equals(typeof(string)))
